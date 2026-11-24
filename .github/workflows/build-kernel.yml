@@ -1,6 +1,8 @@
 name: Build Kernel
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
     # GitHub allows at most 10 workflow_dispatch inputs, so these are the knobs
     # worth changing per-run. Everything else lives in the config file selected
@@ -109,7 +111,7 @@ jobs:
       susfs_version: ${{ steps.meta.outputs.susfs_version }}
     env:
       WORKSPACE: ${{ github.workspace }}/kernel_workspace
-      CONFIG_ENV: ${{ inputs.config }}
+      CONFIG_ENV: ${{ inputs.config || 'config.env' }}
       CCACHE_COMPILERCHECK: "%compiler% -dumpmachine; %compiler% -dumpversion"
       CCACHE_NOHASHDIR: "true"
       CCACHE_HARDLINK: "true"
@@ -236,7 +238,7 @@ jobs:
   release:
     name: Publish release
     needs: build
-    if: inputs.publish_release
+    if: github.event_name == 'push' || inputs.publish_release
     runs-on: ubuntu-latest
     permissions:
       contents: write
