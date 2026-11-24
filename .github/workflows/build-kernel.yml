@@ -95,7 +95,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
   issues: write
 
 jobs:
@@ -193,11 +193,14 @@ jobs:
 
       - name: Report build error
         if: failure()
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
-          { echo 'Build log tail:'; tail -n 120 build.log 2>/dev/null || true; } > /tmp/error.txt
-          gh issue create --title "Build #${{ github.run_number }} failed" --body-file /tmp/error.txt || true
+          { echo 'Build log tail:'; tail -n 200 build.log 2>/dev/null || true; } > build-error.txt
+          git config user.email "bot@users.noreply.github.com"
+          git config user.name "build-bot"
+          git checkout -B build-logs
+          git add -f build-error.txt
+          git commit -m "Build ${{ github.run_number }} error log" || true
+          git push -f origin build-logs
 
       - name: Package artifacts
         run: bash scripts/package.sh all
