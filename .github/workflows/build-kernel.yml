@@ -96,6 +96,7 @@ concurrency:
 
 permissions:
   contents: read
+  issues: write
 
 jobs:
   build:
@@ -188,7 +189,15 @@ jobs:
           max-size: 2G
 
       - name: Build kernel
-        run: bash scripts/build.sh all
+        run: set -o pipefail; bash scripts/build.sh all 2>&1 | tee build.log
+
+      - name: Report build error
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          { echo 'Build log tail:'; tail -n 120 build.log 2>/dev/null || true; } > /tmp/error.txt
+          gh issue create --title "Build #${{ github.run_number }} failed" --body-file /tmp/error.txt || true
 
       - name: Package artifacts
         run: bash scripts/package.sh all
